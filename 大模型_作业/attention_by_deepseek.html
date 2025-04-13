@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>注意力机制可视化教学</title>
+    <style>
+        :root {
+            --primary-color: #4A90E2;
+            --bg-color: #f5f7fb;
+            --card-bg: #ffffff;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            max-width: 1200px;
+            width: 100%;
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 20px;
+        }
+
+        .control-panel {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .visualization {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            min-height: 500px;
+        }
+
+        .slider-container {
+            margin: 15px 0;
+        }
+
+        .word-box {
+            display: flex;
+            gap: 15px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+
+        .word {
+            padding: 8px 15px;
+            background: #eef2ff;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .word.active {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .attention-line {
+            stroke-width: 2;
+            stroke-opacity: 0.3;
+            transition: all 0.3s;
+        }
+
+        button {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: #357ABD;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            margin: 10px 0;
+        }
+
+        .highlight {
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+    </style>
+</head>
+<body>
+    <h1>注意力机制可视化教学</h1>
+    <div class="container">
+        <div class="control-panel">
+            <h2>控制面板</h2>
+            <div class="slider-container">
+                <label>注意力温度参数：</label>
+                <input type="range" id="temperature" min="0.1" max="2" step="0.1" value="1">
+                <span id="tempValue">1.0</span>
+            </div>
+            <button onclick="resetWeights()">重置权重</button>
+            
+            <h3>示例文本</h3>
+            <div class="word-box" id="queryWords">
+                <div class="word">The</div>
+                <div class="word">animal</div>
+                <div class="word">didn't</div>
+                <div class="word">cross</div>
+                <div class="word">the</div>
+                <div class="word">street</div>
+            </div>
+        </div>
+
+        <div class="visualization">
+            <h2>注意力可视化</h2>
+            <svg id="attentionCanvas" width="100%" height="450"></svg>
+        </div>
+    </div>
+
+    <script>
+        const svg = document.getElementById('attentionCanvas');
+        const words = ['The', 'animal', 'didn\'t', 'cross', 'the', 'street'];
+        let selectedWordIndex = 1; // 默认选中 "animal"
+
+        function drawAttention() {
+            svg.innerHTML = '';
+            
+            // 绘制单词节点
+            words.forEach((word, i) => {
+                const x = 100 + i * 120;
+                const y = 100;
+                
+                // 绘制连线
+                if (i === selectedWordIndex) {
+                    words.forEach((_, j) => {
+                        const weight = Math.random() * 0.8 + 0.2; // 模拟注意力权重
+                        const line = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                        const path = `M ${x},${y} Q ${(x + (100 + j * 120))/2} ${y + 100}, ${100 + j * 120},200`;
+                        line.setAttribute('d', path);
+                        line.setAttribute('class', 'attention-line');
+                        line.style.stroke = `rgba(74, 144, 226, ${weight})`;
+                        line.style.strokeWidth = weight * 4;
+                        svg.appendChild(line);
+                    });
+                }
+
+                // 绘制单词方块
+                const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                rect.setAttribute('x', x - 40);
+                rect.setAttribute('y', y - 20);
+                rect.setAttribute('rx', '6');
+                rect.setAttribute('width', 80);
+                rect.setAttribute('height', 40);
+                rect.setAttribute('fill', i === selectedWordIndex ? '#4A90E2' : '#EEF2FF');
+                
+                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                text.setAttribute('x', x);
+                text.setAttribute('y', y + 8);
+                text.setAttribute('text-anchor', 'middle');
+                text.setAttribute('fill', i === selectedWordIndex ? 'white' : '#333');
+                text.textContent = word;
+                
+                svg.appendChild(rect);
+                svg.appendChild(text);
+            });
+        }
+
+        function resetWeights() {
+            document.getElementById('temperature').value = 1;
+            document.getElementById('tempValue').textContent = '1.0';
+            drawAttention();
+        }
+
+        // 初始化
+        document.querySelectorAll('.word').forEach((word, i) => {
+            word.addEventListener('click', () => {
+                document.querySelectorAll('.word').forEach(w => w.classList.remove('active'));
+                word.classList.add('active');
+                selectedWordIndex = i;
+                drawAttention();
+            });
+        });
+
+        document.getElementById('temperature').addEventListener('input', (e) => {
+            document.getElementById('tempValue').textContent = e.target.value;
+            drawAttention();
+        });
+
+        // 初始绘制
+        drawAttention();
+    </script>
+</body>
+</html>
